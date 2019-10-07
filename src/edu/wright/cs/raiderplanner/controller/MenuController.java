@@ -209,8 +209,8 @@ public class MenuController implements Initializable {
 	private boolean chatConnection = true;
 	private Alert chatConnectionStatus = new Alert(AlertType.ERROR);
 	private Alert invalidInputAlert = new Alert(AlertType.ERROR);
-	private static String userName;
-	private static String hostName;
+	private String userName;
+	private String hostName;
 	private int portNumber = 1111;
 
 	Settings settings = new Settings();
@@ -350,7 +350,6 @@ public class MenuController implements Initializable {
 		this.mainContent.getChildren().remove(1, this.mainContent.getChildren().size());
 		this.topBox.getChildren().clear();
 		this.topBox.getChildren().add(this.welcome);
-		this.welcome.setText("Please select the subject to study.");
 		this.title.setText("Study Dashboard");
 
 		FlowPane modulesPane = new FlowPane();
@@ -362,11 +361,13 @@ public class MenuController implements Initializable {
 			VBox dashPic = new VBox();
 			//dashPic.autosize();
 			dashPic.getChildren().add(new ImageView(new
-					Image("/edu/wright/cs/raiderplanner/content/DashBoardHelp.png")));
+					Image("/edu/wright/cs/raiderplanner/content/DashBoardHelp.png", mainContent.getHeight(),mainContent.getWidth(),false,false)));
 			dashPic.setAlignment(Pos.CENTER);
-			this.mainContent.setStyle("-fx-background-color:#ffffff;");
+			this.mainContent.setStyle("-fx-background-color:#eeeeee;");
 			modulesPane.setStyle("-fx-background-color:#ffffff;");
 			this.mainContent.add(dashPic, 1, 3);
+			topBox.getChildren().add(new ImageView(new
+					Image("/edu/wright/cs/raiderplanner/content/DashBoardHelp.png", mainContent.getHeight(),mainContent.getWidth(),false,false)));
 		}
 
 		StudyProfile profile = MainController.getSpc().getPlanner().getCurrentStudyProfile();
@@ -399,7 +400,7 @@ public class MenuController implements Initializable {
 				// Set the height of the module to 112% of its width
 				vbox.setPrefHeight(vbox.getPrefWidth() * 1.12);
 				// Set margin between text and badge to 10% vbox width
-				vbox.setSpacing(vbox.getPrefWidth() * 0.1);
+				vbox.setSpacing(vbox.getPrefWidth() * 0.0);
 
 				vbox.setAlignment(Pos.CENTER);
 				vbox.setCursor(Cursor.HAND);
@@ -561,8 +562,8 @@ public class MenuController implements Initializable {
 	public void openProfile() {
 		MainController.save();
 		File plannerFile = MainController.ui.loadPlannerFileDialog();
+		MainController.setPlannerFile(plannerFile);
 		if (plannerFile != null) {
-			MainController.setPlannerFile(plannerFile);
 			if (plannerFile.exists()) {
 				if (plannerFile.canRead()) {
 					if (plannerFile.canWrite()) {
@@ -577,16 +578,14 @@ public class MenuController implements Initializable {
 			} else {
 				UiManager.reportError("File does not exist.");
 			}
-			MainController.loadFile(plannerFile);
-
-			try {
-				MainController.ui.reloadMainMenu();
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
 		}
-
+		MainController.loadFile(plannerFile);
+		try {
+			MainController.ui.reloadMainMenu();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -936,6 +935,8 @@ public class MenuController implements Initializable {
 		// Create a table:
 		TableView<Module> table = new TableView<>();
 		table.setItems(list);
+		//limit the number of rows to allow space for buttons below the table
+		GridPane.setRowSpan(table, 20);
 		table.getColumns().addAll(colList);
 		table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 		GridPane.setHgrow(table, Priority.ALWAYS);
@@ -968,57 +969,6 @@ public class MenuController implements Initializable {
 		});
 		this.mainContent.addRow(2, table);
 		this.mainContent.getStyleClass().add("list-item");
-
-		// Actions toolbar:
-		HBox actions = new HBox();
-		GridPane.setHgrow(actions, Priority.ALWAYS);
-		actions.setSpacing(5);
-		actions.setPadding(new Insets(5, 5, 10, 0));
-
-		// Buttons:
-		Button add = new Button("Add a new Module");
-		Button remove = new Button("Remove");
-		remove.setDisable(true);
-
-		// Bind properties on buttons:
-		remove.disableProperty().bind(new BooleanBinding() {
-			{
-				bind(table.getSelectionModel().getSelectedItems());
-			}
-
-			@Override
-			protected boolean computeValue() {
-				return !(list.size() > 0
-						&& table.getSelectionModel().getSelectedItem() != null);
-			}
-		});
-
-		// Bind actions on buttons:
-		add.setOnAction(e -> {
-			try {
-				Module module  = MainController.ui.addModule();
-
-				if (module != null) {
-					list.add(module);
-					MainController.getSpc().getPlanner().getCurrentStudyProfile().addModule(module);
-				}
-			} catch (IOException e1) {
-				UiManager.reportError("Unable to open View file");
-			}
-		});
-
-		remove.setOnAction(e -> {
-			if (UiManager.confirm("Are you sure you want to remove this module?")) {
-				Module module = table.getSelectionModel().getSelectedItem();
-				list.remove(module);
-				MainController.getSpc().getPlanner().getCurrentStudyProfile().removeModule(module);
-			}
-		});
-
-		actions.getChildren().addAll(add, remove);
-
-		mainContent.addRow(3, actions);
-
 	}
 
 	/**
@@ -1106,11 +1056,6 @@ public class MenuController implements Initializable {
 		GridPane.setHgrow(moduleContent, Priority.ALWAYS);
 		GridPane.setVgrow(moduleContent, Priority.ALWAYS);
 
-		// Actions toolbar:
-		HBox actions = new HBox();
-		GridPane.setHgrow(actions, Priority.ALWAYS);
-		actions.setSpacing(5);
-		actions.setPadding(new Insets(5, 5, 10, 0));
 
 		// Set click event:
 		moduleContent.setRowFactory(e -> {
@@ -1125,29 +1070,6 @@ public class MenuController implements Initializable {
 		});
 		this.mainContent.addRow(3, moduleContent);
 		GridPane.setColumnSpan(moduleContent, GridPane.REMAINING);
-
-		// Buttons:
-		Button add = new Button("Add a new Assignment");
-
-		// Bind actions on buttons:
-		add.setOnAction(e -> {
-			try {
-
-				Assignment assignment  = MainController.ui.addAssignment(module);
-				module.addAssignment(assignment);
-
-				if (assignment != null) {
-					list.add(assignment);
-				}
-			} catch (IOException e1) {
-				UiManager.reportError("Unable to open View file");
-			}
-		});
-
-		actions.getChildren().addAll(add);
-
-		mainContent.addRow(4, actions);
-
 	}
 
 	/**
@@ -1303,7 +1225,7 @@ public class MenuController implements Initializable {
 	 *
 	 * @return the currently registered user's chat ID.
 	 */
-	public static String getUserName() {
+	public String getUserName() {
 		return userName;
 	}
 
@@ -1312,7 +1234,7 @@ public class MenuController implements Initializable {
 	 *
 	 * @return the current host name registered to the chat user.
 	 */
-	public static String getHostName() {
+	public String getHostName() {
 		return hostName;
 	}
 
@@ -1748,6 +1670,7 @@ public class MenuController implements Initializable {
 			}
 		}
 		this.welcome.setPadding(new Insets(10, 15, 10, 15));
+welcome.setMinWidth(150);
 		this.topBox.getChildren().add(this.welcome);
 
 		this.mainContent.setVgap(10);
